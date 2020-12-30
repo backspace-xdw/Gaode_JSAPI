@@ -1,0 +1,972 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>地理信息</title>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.8&key=445963c21619a7e1475cf34ee191a428&plugin=AMap.MarkerClusterer"></script>
+    <script src="../../js/commonJs.js"></script>
+    <script src="../../lib/layui-v2.5.5/layui.js"></script>
+    <script src="../../js/lay-module/layuimini/layuimini.js"></script>
+    <script src="Scripts/jquery-3.4.1.min.js"></script>
+    <style type="text/css">
+        #panel {
+            position: absolute;
+            background-color: white;
+            max-height: 80%;
+            overflow-y: auto;
+            top: -3px;
+            right: 511px;
+            width: 250px;
+            border: solid 1px silver;
+        }
+
+        .info {
+            margin: 0;
+            /*border:solid 1px #154569;*/
+        }
+
+        .info-title {
+            color: #ff6a00;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 0px 0 0 6px;
+        }
+
+        .info-content {
+            /*padding: 4px;*/
+            color: #154569;
+            /*color: #c23531;*/
+            font-size: 8px;
+        }
+
+        input[type="text"] {
+            height: 25px;
+            outline: none;
+            border: 0;
+            border: 1px solid #CCCCCC;
+            padding: 0 4px;
+        }
+
+        .MenuBtn {
+            background-color: #379BFF;
+            color: #FFFFFF;
+        }
+
+        .button {
+            background: #008CBA;
+            color: white;
+        }
+
+        div,
+        body {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        .column2 label {
+            font-size: 14px;
+        }
+
+        .top {
+            background: #1481c2;
+            color: white;
+            text-align: center;
+        }
+
+        .top_logo {
+            height: 80px;
+            width: 200px;
+            position: fixed;
+            left: 4px;
+            top: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0px;
+            margin-left: 17px;
+            margin-bottom: -4px;
+            margin-top: -2px;
+        }
+
+        li {
+            height: 27px;
+            width: 100px;
+            background: #008CBA;
+            text-align: center;
+            border: 1px solid white;
+            margin-top: 4px;
+            /*box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);*/
+            border-radius: 4px;
+        }
+
+        a {
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 12px;
+            vertical-align: middle;
+            color: #ff6a00;
+        }
+
+        li:hover {
+            background-color: gray;
+            /* Green */
+            /*color: gray;*/
+        }
+
+        #cantent_btm {
+            position: absolute;
+            width: 100%;
+            top: 109px;
+            bottom: 0px;
+        }
+
+        #detail_Type {
+            float: left;
+            left: 0px;
+            font-size: 12px;
+            width: 200px;
+            border-right: 1px solid gray;
+            /*height: 100%; min-height: 100%;
+            vertical-align: top;*/
+            background: #e0edf6;
+            position: fixed;
+            bottom: 0px;
+            top: 107px;
+        }
+
+        #iCenter {
+            /*height: 600px;*/
+            left: 0px;
+            position: absolute;
+            top: 1px;
+            bottom: 0px;
+            right: 0px;
+        }
+
+        /*图层*/
+        dl,
+        dt,
+        dd {
+            box-sizing: border-box;
+            font-size: 20px;
+            margin: 0;
+            padding: 0;
+        }
+
+            dl.layer_menu {
+                z-index: 1000;
+                position: absolute;
+                top: 20%;
+                right: 2%;
+                width: 200px;
+                height: 300px;
+                border-radius: 8px 8px 0 0;
+                box-shadow: 0px 0px 5px 2px rgba(0, 0, 0, 0.2);
+                background-color: #fff;
+                overflow: hidden;
+            }
+
+                dl.layer_menu dt {
+                    height: 50px;
+                    background-color: #2f4056;
+                    color: #fff;
+                    margin: 0;
+                    padding: 15px 0px 5px 15px;
+                    box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.2);
+                }
+
+                dl.layer_menu dd {
+                    line-height: 50px;
+                    padding-left: 40px;
+                }
+
+                    dl.layer_menu dd img {
+                        width: 24px;
+                        height: 24px;
+                        padding: 0 5px;
+                        vertical-align: middle;
+                    }
+
+        div.amap-marker-label {
+            background-color: transparent;
+            border: none;
+            top: 20px !important;
+            left: 9px !important;
+            transform: translateX(-50%);
+        }
+
+            div.amap-marker-label:hover {
+                color: #3385FF;
+            }
+    </style>
+    <script type="text/javascript">
+        var mapObj;
+        var cluster;
+        var markers = [];
+
+        //var alarmnum;
+        var polygon;
+        var polygonArr = new Array(); //多边形覆盖物节点坐标数组
+        var editor = {};
+
+
+        //初始化地图对象，加载地图
+        function mapInit() {
+            mapObj = new AMap.Map("iCenter", {
+                resizeEnable: true,
+                center: new AMap.LngLat(121.0203370000, 31.7348750000), //地图中心点
+                level: 15, //地图显示的比例尺级别
+                zoom: 15
+                //zoomEnable:false
+            });
+
+            // AMap.event.addListener(mapObj, 'click', getLnglat); //点击事件
+            // 同时引入工具条插件，比例尺插件和鹰眼插件
+            AMap.plugin([
+                'AMap.ToolBar',
+                'AMap.Scale',
+                'AMap.OverView',
+                'AMap.MapType',
+                'AMap.Geolocation',
+                'AMap.Driving',
+                'AMap.Transfer',
+                'AMap.Autocomplete',
+                'AMap.PolyEditor'
+                //'AMap.Circle'
+            ], function () {
+                // 在图面添加工具条控件，工具条控件集成了缩放、平移、定位等功能按钮在内的组合控件
+                mapObj.addControl(new AMap.ToolBar());
+
+                // 在图面添加比例尺控件，展示地图在当前层级和纬度下的比例尺
+                mapObj.addControl(new AMap.Scale());
+
+                // 在图面添加鹰眼控件，在地图右下角显示地图的缩略图
+                mapObj.addControl(new AMap.OverView({
+                    isOpen: true
+                }));
+
+                // 在图面添加类别切换控件，实现默认图层与卫星图、实施交通图层之间切换的控制
+                mapObj.addControl(new AMap.MapType());
+
+                // 在图面添加定位控件，用来获取和展示用户主机所在的经纬度位置
+                mapObj.addControl(new AMap.Geolocation());
+            });
+
+            //为地图注册click事件获取鼠标点击出的经纬度坐标
+            var clickEventListener = mapObj.on('click', function (e) {
+                document.getElementById("lnglat").value = e.lnglat.getLng() + ',' + e.lnglat.getLat()
+            });
+            var auto = new AMap.Autocomplete({
+                input: "tipinput"
+            });
+            AMap.event.addListener(auto, "select", select); //注册监听，当选中某条记录时会触发
+            function select(e) {
+                if (e.poi && e.poi.location) {
+                    mapObj.setZoom(12);
+                    mapObj.setCenter(e.poi.location);
+                }
+            }
+
+            //电子围栏
+            polygonArr.push([121.0079094900, 31.7274852900]);
+            polygonArr.push([121.0227761100, 31.7192389300]);
+            polygonArr.push([121.0387961400, 31.7404019100]);
+            polygonArr.push([121.0167487600, 31.7498459200]);
+
+            polygon = new AMap.Polygon({
+                path: polygonArr, //设置多边形边界路径
+                //strokeColor: "red", //线颜色
+                //strokeOpacity: 0.2, //线透明度
+                //strokeWeight: 3,    //线宽
+                strokeColor: '#666',
+                strokeWeight: 3,
+                strokeOpacity: 0.5,
+                strokeDasharray: [30, 10],
+                fillColor: "#1791fc", //填充色
+                fillOpacity: 0.15 //填充透明度
+            });
+            polygon.setMap(mapObj);
+            editor._polygonEditor = new AMap.PolyEditor(mapObj, polygon);
+        }
+
+        //编辑多边形
+        function startEditPolygon() {
+            editor._polygonEditor.open();
+        }
+        //结束编辑多边形
+        function closeEditPolygon() {
+            editor._polygonEditor.close();
+        }
+
+        //添加车辆
+        function addMarker(title_i) {
+            var marker = new AMap.Marker({
+                icon: "../../images/gis/images/timg%20(26).png",
+                position: new AMap.LngLat(-47.208005, -10.037783),
+                title: title_i,
+                label: {
+                    offset: new AMap.Pixel(15, 15),
+                    content: title_i
+                },
+                map: mapObj
+            });
+            markers.push(marker);
+        }
+        //移除车辆
+        function removeMarker(title_i) {
+            //console.log(markers[0].getTitle());
+            for (var i = 0; i < markers.length; i++) {
+                if (markers[i].getTitle() == title_i) {
+                    markers[i].setMap(null);
+                    markers.splice(i, 1);
+                    //cluster.removeMaker(markers[i]);
+                    break;
+                }
+            }
+        }
+
+        //添加摄像头
+        var SXTmarkers = [];
+        var jsonstr =
+            '[{"SXTid":"1","weidu":"121.020136","jindu":"31.732478","name":"摄像头1"},{"SXTid":"2","weidu":"121.025414","jindu":"31.729996","name":"摄像头2"},{"SXTid":"3","weidu":"121.023526","jindu":"31.734449","name":"摄像头3"}]';
+        //var jsonObj = JSON.parse(jsonstr); //转换为json对象
+        var jsonObj;
+        //摄像头位置信息获取
+        $.ajax({
+            url: getServicePath(2) + '/gis/CameraInfo.json',
+            type: 'GET',
+            dataType: 'json',
+            timeout: 1000,
+            cache: false,
+            async: false,
+            error: function (xml) {
+                console.log('摄像头位置信息获取失败！');
+            },
+            success: function (xml) {
+                //console.log(xml);
+                jsonObj = xml.data;
+                //console.log(jsonObj);
+            }
+        });
+        var SXTIS = true;
+
+        function addSXTMarker() {
+            //console.log(jsonObj);
+            if (SXTIS == true) {
+                for (var i = 0, marker; i < jsonObj.length; i++) {
+                    marker = new AMap.Marker({
+                        map: mapObj,
+                        position: [jsonObj[i].jindu, jsonObj[i].weidu],
+                        icon: "Content/SXT.png",
+                        title: jsonObj[i].SXTid,
+                        label: {
+                            offset: new AMap.Pixel(15, 15),
+                            content: jsonObj[i].name
+                        }
+                    });
+                    marker.setTitle(jsonObj[i].SXTid); //设置传参
+
+                    marker.on('click', markerClick11);
+
+                    function markerClick11(e) {                       
+                        var url = 'HIK_window_simple_preview.html?obj=' + e.target.getTitle();
+                        url = encodeURI(url);
+                        window.open(url, "", "width=830,height=500");
+
+                        //window.location.href = "BenAnVideo.html";
+                    }
+                    SXTmarkers.push(marker);
+                }
+                SXTIS = false;
+            } else {
+                mapObj.remove(SXTmarkers);
+                SXTIS = true;
+            }
+        }
+
+        //添加企业
+        var QYmarkers = [];
+        var QYjsonstr =
+            '[{"SXTid":"21c1e64b-6c59-47e1-9927-de4854bd09ae","weidu":"121.01902","jindu":"31.732259","name":"企业1"},{"SXTid":"8da264ae-b592-4446-99ee-bc51c3a85fb3","weidu":"121.024148","jindu":"31.731803","name":"企业2"},{"SXTid":"3","weidu":"121.020823","jindu":"31.726985","name":"企业3"},{"SXTid":"4","weidu":"121.018012","jindu":"31.725214","name":"企业4"}]';
+        //var QYjsonObj = JSON.parse(QYjsonstr); //转换为json对象
+        var QYjsonObj;
+        //企业位置信息获取
+        $.ajax({
+            url: getServicePath(2) + '/gis/CorporationInfo.json',
+            //url: 'D:/gis/CorporationInfo.json',
+            type: 'GET',
+            dataType: 'json',
+            timeout: 1000,
+            cache: false,
+            async: false,
+            error: function (xml) {
+                console.log('企业位置信息获取失败！');
+            },
+            success: function (xml) {
+                //console.log(xml);
+                QYjsonObj = xml.data;
+            }
+        });
+        var QYISOK = true;
+
+        //添加卡口
+        var KKmarkers = [];
+        var KKjsonstr =
+            '[{"SXTid":"1","weidu":"121.018934","jindu":"31.730525","name":"卡口1"},{"SXTid":"2","weidu":"121.019964","jindu":"31.72808","name":"卡口2"},{"SXTid":"3","weidu":"121.024427","jindu":"31.728445","name":"卡口3"}]';
+        //var KKjsonObj = JSON.parse(KKjsonstr); //转换为json对象
+        var KKjsonObj;
+        //卡口位置信息获取
+        $.ajax({
+            url: getServicePath(2) + '/gis/BayonetInfo.json',
+            type: 'GET',
+            dataType: 'json',
+            timeout: 1000,
+            cache: false,
+            async: false,
+            error: function (xml) {
+                console.log('卡口位置信息获取失败！');
+            },
+            success: function (xml) {
+                //console.log(xml);
+                KKjsonObj = xml.data;
+                //console.log(xml.data);
+            }
+        });
+        var KKISOK = true;
+
+        //添加引导屏
+        var YDPmarkers = [];
+        var YDPjsonstr =
+            '[{"SXTid":"1","weidu":"121.021552","jindu":"31.729987","name":"引导屏1"},{"SXTid":"2","weidu":"121.022228","jindu":"31.731356","name":"引导屏2"}]';
+        //var YDPjsonObj = JSON.parse(YDPjsonstr); //转换为json对象
+        var YDPjsonObj;
+        $.ajax({
+            url: getServicePath(2) + '/gis/GuideInfo.json',
+            type: 'GET',
+            dataType: 'json',
+            timeout: 1000,
+            cache: false,
+            async: false,
+            error: function (xml) {
+                console.log('引导屏位置信息获取失败！');
+            },
+            success: function (xml) {
+                //console.log(xml);
+                YDPjsonObj = xml.data;
+            }
+        });
+        var YDPISOK = true;
+
+        function toZhuYe() {
+            window.location.href = "SetValueToHtml.html";
+        }
+
+        var ISdeletemaker = false;
+
+        function xdwll() {
+            if (ISdeletemaker == false) {
+                addMarker('沪A56919');
+                ISdeletemaker = true;
+            } else {
+                //removeMarker('沪A56919');
+                //ISdeletemaker = false;
+            }
+        }
+        $(function () {
+            //获取引导屏控件包含的checkbox并监听点击事件
+            $("#ydp").click(function () {
+                //var carname = this.value;
+                if (this.checked) {
+                    for (var i = 0, marker; i < YDPjsonObj.length; i++) {
+                        marker = new AMap.Marker({
+                            map: mapObj,
+                            position: [YDPjsonObj[i].jindu, YDPjsonObj[i].weidu],
+                            icon: "../../images/gis/images/newlayer-ydp.png",
+                            title: YDPjsonObj[i].SXTid,
+                            label: {
+                                offset: new AMap.Pixel(15, 15),
+                                content: "引导屏" + YDPjsonObj[i].name
+                            }
+                        });
+
+                        marker.setTitle(YDPjsonObj[i].SXTid); //设置传参
+                        marker.on('click', markerClickYDP);
+
+                        function markerClickYDP(e) {
+                            var url;
+                            if (e.target.getTitle() == '1') { url = "http://192.168.252.101/api/screenshot"; }
+                            if (e.target.getTitle() == '2') { url = "http://192.168.252.120/api/screenshot"; }
+                            if (e.target.getTitle() == '3') { url = "http://192.168.252.197/api/screenshot"; }
+                            window.open(url, "", "width=830,height=500");
+
+                            // var c_code = e.target.getTitle();
+                            // var content = '../../page/gis/view_guide_gis.html';
+                            // var openWH = layuimini.getOpenWidthHeight();
+
+                            // var index = layer.open({
+                            // 	title: '引导屏',
+                            // 	type: 2, //0（信息框，默认）1（页面层）2（iframe层）3（加载层）4（tips层）
+                            // 	shade: 0.2,
+                            // 	maxmin: true,
+                            // 	shadeClose: true,
+                            // 	area: ['700px', '350px'],
+                            // 	//area: [openWH[0] * 5 + 'px', openWH[1] + 'px']
+                            // 	//offset: [openWH[2] + 'px', openWH[3] + 'px'],
+                            // 	content: content,
+                            // 	success: function(layero, index) {
+                            // 		var body = layer.getChildFrame('body', index);
+                            // 		var iframeWin = window[layero.find('iframe')[0]['name']]; //得到iframe页的窗口对象，执行iframe页的方法：iframeWin.method();
+                            // 		console.log(c_code);
+                            // 		$.ajax({
+                            // 			url: getServicePath(2) + "/gis.ashx?action=current_guide",
+                            // 			type: "GET",
+                            // 			data: {
+                            // 				"c_code": c_code
+                            // 			},
+                            // 			dataType: "json",
+                            // 			success: function(data) {
+                            // 				var jsonData = data.data;
+                            // 				console.log(jsonData);
+                            // 				$.each(jsonData, function(index, item) {
+                            // 					body.find('#_c_position').val(jsonData[0].c_position); //位置
+                            // 					body.find('#_c_content').val(jsonData[0].c_content); //当前内容
+                            // 				})
+                            // 			},
+                            // 			error: function() {
+                            // 				//console.log(1);
+                            // 			}
+                            // 		});
+                            // 	}
+                            // });
+                            // $(window).on("resize", function() {
+                            // 	layer.full(index);
+                            // });
+                            // return false;
+                        }
+                        YDPmarkers.push(marker);
+                    }
+                    YDPISOK = false;
+                } else {
+                    mapObj.remove(YDPmarkers);
+                    YDPISOK = true;
+                }
+            });
+
+            //获取卡口控件包含的checkbox并监听点击事件
+            $("#kk").click(function () {
+                //var carname = this.value;
+                if (this.checked) {
+
+                    for (var i = 0, marker; i < KKjsonObj.length; i++) {
+                        if (i % 4 == 0) {
+                            var guideName;
+                            if (i == 0) {
+                                guideName = "亚太路兴港路卡口";
+                            }
+                            if (i == 4) {
+                                guideName = "兴港路长宏路卡口";
+                            }
+                            if (i == 8) {
+                                guideName = "长春路通港路利巨印染卡口";
+                            }
+                            marker = new AMap.Marker({
+                                map: mapObj,
+                                position: [KKjsonObj[i].jindu, KKjsonObj[i].weidu],
+                                icon: "../../images/gis/images/newlayer-kk.png",
+                                title: KKjsonObj[i].SXTid,
+                                label: {
+                                    offset: new AMap.Pixel(15, 15),
+                                    content: guideName
+                                }
+                            });
+
+                            marker.setTitle(KKjsonObj[i].SXTid); //设置传参
+                            marker.on('click', markerClickKK);
+
+                            function markerClickKK(e) {
+                                // var url = 'HIK_window_simple_preview.html?obj=' + e.target.getTitle();
+                                // url = encodeURI(url);
+                                // window.open(url, "", "width=830,height=500");
+                                //window.location.href = "BenAnVideo.html";
+                                var c_code = e.target.getTitle();
+                                // if (c_code=="1639daf3816a4224833d60978699ff17"){guideName="亚太路兴港路卡口"}
+                                // if (c_code=="b3755a411286421cb8a31c53edfe36a2"){guideName="兴港路长宏路卡口"}
+                                // if (c_code=="37883ee11b88495c8b824bad1cb81596"){guideName="长春路通港路利巨印染卡口"}
+                                var content = '../../page/gis/bayonet_capture_gis.html';
+                                var openWH = layuimini.getOpenWidthHeight();
+
+                                var index = layer.open({
+                                    title: '卡口抓拍',
+                                    type: 2, //0（信息框，默认）1（页面层）2（iframe层）3（加载层）4（tips层）
+                                    shade: 0.2,
+                                    maxmin: true,
+                                    shadeClose: true,
+                                    // area: ['700px', '350px'],
+                                    area: ['100%', '100%'],
+                                    //area: [openWH[0] * 5 + 'px', openWH[1] + 'px']
+                                    //offset: [openWH[2] + 'px', openWH[3] + 'px'],
+                                    content: content,
+                                    success: function (layero, index) {
+                                        var body = layer.getChildFrame('body', index);
+                                        var iframeWin = window[layero.find('iframe')[0]['name']]; //得到iframe页的窗口对象，执行iframe页的方法：iframeWin.method();
+                                        body.find('#_c_code').val(c_code); //卡口编码
+                                    },
+                                    error: function () {
+                                        //console.log(1);
+                                    }
+                                });
+
+                                $(window).on("resize", function () {
+                                    layer.full(index);
+                                });
+                                return false;
+                            }
+                            KKmarkers.push(marker);
+                        }
+                        KKISOK = false;
+                    }
+                    //以下是原版本，显示每个卡口抓拍
+                    // for (var i = 0, marker; i < KKjsonObj.length; i++) {
+                    // 	marker = new AMap.Marker({
+                    // 		map: mapObj,
+                    // 		position: [KKjsonObj[i].jindu, KKjsonObj[i].weidu],
+                    // 		icon: "../../images/gis/images/newlayer-kk.png",
+                    // 		title: KKjsonObj[i].SXTid,
+                    // 		label: {
+                    // 			offset: new AMap.Pixel(15, 15),
+                    // 			content: KKjsonObj[i].name
+                    // 		}
+                    // 	});
+
+                    // 	marker.setTitle(KKjsonObj[i].SXTid); //设置传参
+                    // 	marker.on('click', markerClickKK);
+
+                    // 	function markerClickKK(e) {
+                    // 		var url = 'HIK_window_simple_preview.html?obj=' + e.target.getTitle();
+                    // 		url = encodeURI(url);
+                    // 		window.open(url, "", "width=830,height=500");
+                    // 		//window.location.href = "BenAnVideo.html";
+                    // 	}
+                    // 	KKmarkers.push(marker);
+                    // }
+                    // KKISOK = false;
+                } else {
+                    mapObj.remove(KKmarkers);
+                    KKISOK = true;
+                }
+            });
+
+            //获取企业控件包含的checkbox并监听点击事件
+            $("#qy").click(function () {
+                //var carname = this.value;
+                if (this.checked) {
+                    for (var i = 0, marker; i < QYjsonObj.length; i++) {
+                        marker = new AMap.Marker({
+                            map: mapObj,
+                            position: [QYjsonObj[i].jindu, QYjsonObj[i].weidu],
+                            icon: "../../images/gis/images/newlayer-qy.png",
+                            //title: QYjsonObj[i].name
+                            //label: {
+                            //    offset: new AMap.Pixel(15, 15),
+                            //    content: QYjsonObj[i].name
+                            //}
+                            title: QYjsonObj[i].SXTid,
+                            label: {
+                                offset: new AMap.Pixel(15, 15),
+                                content: QYjsonObj[i].name
+                            }
+                        });
+
+                        marker.setTitle(QYjsonObj[i].SXTid); //设置传参
+                        marker.on('click', markerClickQY);
+
+                        function markerClickQY(e) {
+                            // var url = 'HIK_window_simple_preview.html?obj=' + e.target.getTitle();
+                            // url = encodeURI(url);
+                            // window.open(url, "", "width=830,height=500");
+                            // //window.location.href = "BenAnVideo.html";
+                            var infoCorporationOID = e.target.getTitle();
+                            var content = '../../page/gis/view_corporation_gis.html';
+                            var openWH = layuimini.getOpenWidthHeight();
+
+                            var index = layer.open({
+                                title: '查看企业信息',
+                                type: 2, //0（信息框，默认）1（页面层）2（iframe层）3（加载层）4（tips层）
+                                shade: 0.2,
+                                maxmin: true,
+                                shadeClose: true,
+                                area: ['830px', '500px'],
+                                //area: [openWH[0] * 5 + 'px', openWH[1] + 'px']
+                                //offset: [openWH[2] + 'px', openWH[3] + 'px'],
+                                content: content,
+                                success: function (layero, index) {
+                                    var body = layer.getChildFrame('body', index);
+                                    var iframeWin = window[layero.find('iframe')[0]['name']]; //得到iframe页的窗口对象，执行iframe页的方法：iframeWin.method();
+                                    $.ajax({
+                                        url: getServicePath(2) + "/info_corporation.ashx?action=get_info_all",
+                                        type: "GET",
+                                        data: {
+                                            "info_corporationOID": infoCorporationOID
+                                        },
+                                        dataType: "json",
+                                        success: function (data) {
+                                            var jsonData = data.data;
+                                            console.log(jsonData);
+                                            $.each(jsonData, function (index, item) {
+                                                body.find('#_info_corporationOID').val(infoCorporationOID); //主键
+                                                body.find('#_c_code').val(jsonData[0].c_code); //企业编号
+                                                body.find('#_c_name').val(jsonData[0].c_name); //企业名称
+                                                body.find('#_c_shortname').val(jsonData[0].c_shortname); //企业简称
+                                                body.find('#_c_nature').append(new Option(jsonData[0].c_nature_name, jsonData[0].c_nature)); //企业性质
+                                                body.find('#_c_size').append(new Option(jsonData[0].c_size_name, jsonData[0].c_size)); //企业规模
+                                                body.find('#_c_industry_class').append(new Option(jsonData[0].c_industry_class_name, jsonData[
+                                                    0].c_industry_class)); //行业类型
+                                                body.find('#_c_uscc').val(jsonData[0].c_uscc); //统一社会信用代码
+                                                body.find('#_c_scope').val(jsonData[0].c_scope); //经营范围
+                                                body.find('#_c_product').val(jsonData[0].c_product); //生产产品
+                                                body.find('#_c_material').val(jsonData[0].c_material); //使用物料
+                                                //body.find('#_c_shortname').val(jsonData[0].c_shortname); //省
+                                                //body.find('#_c_shortname').val(jsonData[0].c_shortname); //市
+                                                //body.find('#_c_shortname').val(jsonData[0].c_shortname); //区
+                                                body.find('#_c_addr').val(jsonData[0].c_addr); //详细地址
+                                                body.find('#_f_longitude').val(QYjsonObj[0].weidu); //经度
+                                                body.find('#_f_latitude').val(QYjsonObj[0].jindu); //纬度
+                                                body.find('#_c_economy_type').append(new Option(jsonData[0].c_economy_type_name, jsonData[0].c_economy_type)); //投资方式
+                                                body.find('#_i_fixed_assets').val(jsonData[0].i_fixed_assets); //注册金额
+                                                body.find('#_c_area_type').append(new Option(jsonData[0].c_area_type_name, jsonData[0].c_area_type)); //所属管辖
+                                                body.find('#_c_grid').val(jsonData[0].c_grid); //类型
+                                                body.find('#_c_zy_fx').val(jsonData[0].c_zy_fx); //类型说明
+                                                body.find('#_c_charge_person').val(jsonData[0].c_charge_person); //法定代表人
+                                                body.find('#_c_telephone_no').val(jsonData[0].c_telephone_no); //电话号码
+                                                body.find('#_c_mobile_no').val(jsonData[0].c_mobile_no); //手机号码
+                                                body.find('#_allday_hotline').val(jsonData[0].allday_hotline); //综值班电话
+                                                body.find('#_c_state').append(new Option(jsonData[0].c_state_name, data.c_state)); //运营状态
+                                                body.find('#_c_memo').val(jsonData[0].c_memo); //备注信息
+                                            })
+                                            form.render('select'); //刷新select选择框渲染
+                                        },
+                                        error: function () {
+                                            //console.log(1);
+                                        }
+                                    });
+                                }
+                            });
+                            $(window).on("resize", function () {
+                                layer.full(index);
+                            });
+                            return false;
+                        }
+                        QYmarkers.push(marker);
+                    }
+                    QYISOK = false;
+                } else {
+                    mapObj.remove(QYmarkers);
+                    QYISOK = true;
+                }
+            });
+
+            //获取摄像头控件包含的checkbox并监听点击事件
+            //$.getJSON(getServicePath(2) +'SXT.json', function (data) {
+            //    console.log(data);
+            //});
+
+            $("#sxt").click(function () {
+                //var carname = this.value;
+                if (this.checked) {
+                    for (var i = 0, marker; i < jsonObj.length; i++) {
+                        marker = new AMap.Marker({
+                            map: mapObj,
+                            position: [jsonObj[i].jindu, jsonObj[i].weidu],
+                            icon: "../../images/gis/images/newlayer-sxt.png",
+                            title: jsonObj[i].SXTid,
+                            label: {
+                                offset: new AMap.Pixel(15, 15),
+                                content: jsonObj[i].name
+                            }
+                        });
+
+                        marker.setTitle(jsonObj[i].SXTid); //设置传参
+                        marker.on('click', markerClick11);
+
+                        function markerClick11(e) {
+                            var url = '../othersys/vedio/HIK_window_simple_preview.html?obj=' + e.target.getTitle();
+                            url = encodeURI(url);
+                            window.open(url, "", ""); //width=1100,height=700
+                            //window.location.href = "BenAnVideo.html";
+                        }
+
+                        SXTmarkers.push(marker);
+                    }
+                    SXTIS = false;
+                } else {
+                    mapObj.remove(SXTmarkers);
+                    SXTIS = true;
+                }
+            });
+
+            //获取车辆控件包含的checkbox并监听点击事件
+            $("#cl").click(function () {
+                if (this.checked) {
+                    //实时车辆动态列表
+                    //var VecNum = ["沪AB12345", "沪AK47001"];
+                    var VehArr = [];
+                    $.ajax({
+                        url: getServicePath(2) + '/gis/ParkVehicle.json',
+                        type: 'GET',
+                        dataType: 'json',
+                        timeout: 1000,
+                        cache: false,
+                        async: false,
+                        error: function (xml) {
+                            console.log('获取车辆失败！');
+                        },
+                        success: function (xml) {
+                            //console.log(xml);
+                            VehArr = xml.data;
+                        }
+                    });
+                    for (var jj = 0; jj < VehArr.length; jj++) {
+                        addMarker(VehArr[jj].c_plate_no);
+                    }
+
+                    //addMarker('沪A56919');
+                    ISdeletemaker = true;
+                    setInterval(function RefreshCar() {
+                        if (ISdeletemaker) {
+
+                            var cartxt = "沪A56919";
+                            var jindu = "121.030961";
+                            var weidu = "31.737588";
+                            //var sudu = "0";
+                            var licheng = "危化品车辆";
+                            var vecinout = "在线";
+                            var xwtime = "2020/3/19 15:39:11";
+
+                            for (var i = 0; i < VehArr.length; i++) {
+                                //alarmnum=0;
+                                for (var k = 0; k < markers.length; k++) {
+                                    if (markers[k].getTitle().toUpperCase() === VehArr[i].c_plate_no.toUpperCase()) {
+                                        //var ajaxurl = 'http://192.168.1.141:8022/pos/' + markers[k].getTitle() + '.xml';
+                                        var ajaxurl = getServicePath(2) + "/pos/" + markers[k].getTitle().toUpperCase() + '.xml';
+                                        //位置信息获取
+                                        $.ajax({
+                                            url: ajaxurl,
+                                            type: 'GET',
+                                            dataType: 'xml',
+                                            timeout: 1000,
+                                            cache: false,
+                                            async: false,
+                                            error: function (xml) {
+                                                console.log(markers[k].getTitle().toUpperCase() + ':位置信息获取失败！');
+                                            },
+                                            success: function (xml) {
+                                                //遍历所有student节点
+                                                $(xml).find("table").each(function (i) {
+                                                    //获取id节点
+                                                    var id = $(this).children("Identifier");
+                                                    //获取节点文本
+                                                    id_value = id.text();
+                                                    if (id_value === markers[k].getTitle().toUpperCase()) {
+                                                        //获取属性值。
+                                                        jindu = $(this).children("Longitude").text();
+                                                        weidu = $(this).children("Latitude").text();
+                                                        xwtime = $(this).children("Time").text();
+                                                        //构造HTML字符串，通过append方法添加进之前建立代码片段
+                                                        //frag.append("<li>" + id_value + ":" + email + "," + email11 + "</li>");
+                                                        return false;
+                                                    }
+                                                });
+                                                //最后得到的frag添加进HTML文档中
+                                                //frag.appendTo("#load");
+                                            }
+                                        });
+
+                                        markers[k].setPosition(new AMap.LngLat(jindu, weidu));
+
+                                        //点击标记弹出信息框
+                                        var infoWindow = new AMap.InfoWindow({
+                                            offset: new AMap.Pixel(0, -30)
+                                        }); //
+                                        markers[k].content =
+                                            '<div class="info"><div class="info-title"><a href="BenAnVideo.html" target="_right">' + markers[k].getTitle() +
+                                            '</a></div><div class="info-content">' + '车辆状态:' + vecinout + '<br/>车辆类型:' + licheng + ' <br/>经度:' + jindu + '<br/>纬度:' +
+                                            weidu + '</div></div>';
+                                        markers[k].on('click', markerClick);
+                                        //markers[k].emit('click', { target: markers[k] });
+                                        function markerClick(e) {
+                                            infoWindow.setContent(e.target.content);
+                                            infoWindow.open(mapObj, e.target.getPosition());
+                                        }
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            //ISdeletemaker = false;
+                        } else {
+                            removeMarker('沪A56919');
+                            //ISdeletemaker = true;
+                        }
+                    }, 2000);
+                } else {
+                    mapObj.remove(markers);
+                    markers = [];
+                }
+            });
+        });
+
+        //聚合功能
+        function addCluster() {
+            if (cluster) {
+                cluster.setMap(null);
+            }
+            mapObj.plugin(["AMap.MarkerClusterer"], function () {
+                cluster = new AMap.MarkerClusterer(mapObj, markers);
+            });
+        }
+    </script>
+
+</head>
+<body onload="mapInit();">
+    <form id="form1">
+        <dl class="layer_menu">
+            <dt id="tuceng">图层</dt>
+            <dd>
+                <input type="checkbox" name="layer_checkbox" id="cl">
+                <label for="cl"><img src="../../images/gis/images/newlayer-cl.png">叉车</label>
+            </dd>
+            <dd>
+                <input type="checkbox" name="layer_checkbox" id="qy">
+                <label for="qy"><img src="../../images/gis/images/layer-qy.png">企业</label>
+            </dd>
+            <dd>
+                <input type="checkbox" name="layer_checkbox" id="kk">
+                <label for="kk"><img src="../../images/gis/images/layer-kk.png">主干道</label>
+            </dd>
+            <dd>
+                <input type="checkbox" name="layer_checkbox" id="sxt">
+                <label for="sxt"><img src="../../images/gis/images/layer-sxt.png">视频监控</label>
+            </dd>
+            <dd>
+                <input type="checkbox" name="layer_checkbox" id="ydp">
+                <label for="ydp"><img src="../../images/gis/images/layer-ydp.png">引导屏</label>
+            </dd>
+            <!--<dd>
+                <input type="checkbox" name="layer_checkbox" id="DZWL">
+                <label for="ydp"><img src="../../images/gis/images/layer-ydp.png">电子围栏</label>
+            </dd>-->
+        </dl>
+        <div id="iCenter"></div>
+    </form>
+    <script>
+        $("#tuceng").click(function () {
+            //console.log("我点击了图层");
+            //window.open("MapShowCS.html");
+        })
+    </script>
+</body>
+
+</html>

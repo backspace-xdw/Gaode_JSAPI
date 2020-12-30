@@ -1,0 +1,426 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width" />
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.8&key=445963c21619a7e1475cf34ee191a428"></script>
+    <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+    <title>轨迹回放</title>
+    <link href="../Content/calendar.css" rel="stylesheet" />
+    <link href="../Content/TableButton.css" rel="stylesheet" />
+    <script src="../Scripts/Calendar.js"></script>
+    <script src="../Scripts/calendar-zh.js"></script>
+    <script src="../Scripts/CalendarSetup.js"></script>
+    <script src="../Scripts/PanDuanChaXun.js"></script>
+    <script src="../Scripts/jquery-3.4.1.min.js"></script>
+    <script src="../My97DatePicker/calendar.js"></script>
+    <script src="../My97DatePicker/WdatePicker.js"></script>
+
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+        }
+
+        .button-rounded,
+        .button-rounded11 {
+            height: 27px;
+            width: auto;
+            background: transparent;
+            text-align: center;
+            border: none;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 0px;
+        }
+
+        a {
+            font-size: 14px;
+            vertical-align: middle;
+            color: white;
+            text-decoration: none;
+        }
+
+        #top_map {
+            width: 100%;
+            background: #243346;
+            color: white;
+            font-size: 14px;
+            position: relative;
+            height: 60px;
+        }
+
+        .button {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            border: none;
+            margin: 10px 20px;
+            font-size: 16px;
+            /*line-height:2.5rem;*/
+        }
+
+            .button:hover {
+                color: #fff;
+                cursor: pointer;
+            }
+
+        .button-rounded11 {
+            /*height: 27px;*/
+            width: auto;
+            background: #125a8c;
+            /*text-align: center;*/
+            /*border: 1px solid white;*/
+            /*margin-top: 0px;*/
+            padding: 5px;
+            /*border-radius: 12px;*/
+        }
+
+        #query {
+            /*width: 1104px;
+            height: 26px;*/
+            min-width: 1050px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%,-50%);
+            /* margin-left: -552px;
+            margin-top: -13px;*/
+        }
+
+            #query label {
+                padding-left: 20px;
+            }
+
+            #query input.button-rounded {
+                margin-left: 20px;
+                border-radius: 0;
+                line-height: 0;
+            }
+
+                #query input.button-rounded:hover {
+                    color: #fff;
+                    cursor: pointer;
+                }
+
+        #dataShow {
+            /*overflow-y: scroll;*/
+            /*height: 250px;*/
+            width: 500px;
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            top: 60px;
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 99;
+            box-shadow: 0 0 10px rgba(0,0,0,.05)
+            /*border: 1px solid black;*/
+        }
+
+            #dataShow #Button1 {
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                background-image: linear-gradient(to bottom,#eee 0,#ddd 100%);
+                margin-top: 20px;
+                font-size: 16px;
+                padding: 5px 10px;
+            }
+
+            #dataShow div {
+                color: #666;
+            }
+
+        #container {
+            position: absolute;
+            left: 0;
+            top: 60px;
+            right: 500px;
+            bottom: 50px;
+            /*overflow: auto;*/
+        }
+
+        .bottom_map {
+            background: #2f4056;
+            height: 50px;
+            /*width:500px;*/
+            color: white;
+            font-size: 14px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 500px;
+        }
+
+        #trigger, #trigger1, label, select, .button-rounded11, .button-rounded {
+            vertical-align: middle;
+        }
+
+        .table-head {
+            height: 500px;
+            width: 100%;
+            overflow-y: auto;
+        }
+
+        .diy_table {
+            /*border: 2px solid gray;*/ /*rgba(0, 0, 0, 0.2)*/
+            background: #fefefe;
+            width: 100%;
+            /*margin: 0 auto 0;*/
+            /*font:12px;*/
+        }
+
+        table {
+            text-align: center;
+            width: 100%;
+            color: #666;
+            border-collapse: collapse;
+        }
+
+        table, tr, td, th {
+            border: 1px solid #e6e6e6;
+        }
+
+        th {
+            background: #f8f8f8;
+            height: 30px;
+        }
+
+        .calendar {
+            z-index: 999;
+        }
+    </style>
+
+    <script type="text/javascript">
+        function doclear() {
+            document.getElementById("txb_starttime").value = "";
+            document.getElementById("tbx_endtime").value = "";
+        }
+    </script>
+
+    <script type="text/javascript">
+        var map;
+        var marker, xdwdata, lineArr = [];
+        //alert('33');
+        function mapInit() {
+            map = new AMap.Map("container", {
+                //mapStyle: 'amap://styles/macaron',
+                resizeEnable: true,
+                center: [120.939170, 30.820690],
+                zoom: 19
+            });
+            AMap.plugin([
+                'AMap.ToolBar',
+                'AMap.Scale',
+                'AMap.OverView',
+                'AMap.MapType',
+                'AMap.Geolocation',
+                'AMap.Driving',
+                'AMap.Transfer'
+            ], function () {
+                // 在图面添加工具条控件，工具条控件集成了缩放、平移、定位等功能按钮在内的组合控件
+                map.addControl(new AMap.ToolBar());
+
+                // 在图面添加比例尺控件，展示地图在当前层级和纬度下的比例尺
+                map.addControl(new AMap.Scale());
+
+                // 在图面添加鹰眼控件，在地图右下角显示地图的缩略图
+                map.addControl(new AMap.OverView({ isOpen: true }));
+
+                // 在图面添加类别切换控件，实现默认图层与卫星图、实施交通图层之间切换的控制
+                map.addControl(new AMap.MapType());
+
+                // 在图面添加定位控件，用来获取和展示用户主机所在的经纬度位置
+                map.addControl(new AMap.Geolocation());
+            });
+        }
+
+        function convertFrom(LngLat) {
+
+            //var lnglat = [120.781761, 31.808747];
+            // 坐标转换
+            AMap.convertFrom(LngLat, 'gps', (status, result) => {
+                if (result.info === 'ok') {
+                    //lnglat = result.locations[0];
+                    alert('2' + result.locations[0]);
+                }
+            });
+        };
+
+        function GJHFload() {
+            var jingdu = new Array();
+            var weidu = new Array();
+
+            $.ajax({
+                type: "post",
+                url: "../AA_Ashx/ MapGuiJi.ashx",
+                data: { PlateNumber: $("#PlateNumber").val(), txb_starttime: $("#txb_starttime").val(), tbx_endtime: $("#tbx_endtime").val() },
+                timeout: 1000,
+                cache: false,
+                async: false,
+                success: function (data) {
+                    if (data.student.length > 0) {
+                        xdwdata = data.student;
+                    }
+                    else {
+                        alert('暂无轨迹！');
+                    }
+                }
+            });
+            //maker
+            marker = new AMap.Marker({
+                map: map,
+                position: new AMap.LngLat(xdwdata[0].longitude, xdwdata[0].latitude),
+                icon: "https://webapi.amap.com/images/car.png",
+                //icon: "Content/timg(27).png",
+                offset: new AMap.Pixel(-26, -13),
+                autoRotation: true
+            });
+
+            for (var i = 0; i < xdwdata.length; i++) {
+                lineArr.push(new AMap.LngLat(xdwdata[i].longitude, xdwdata[i].latitude));
+            }
+            alert(lineArr);
+            // 绘制轨迹
+            var polyline = new AMap.Polyline({
+                map: map,
+                path: lineArr,
+                strokeColor: "#00A",  //线颜色
+                // strokeOpacity: 1,     //线透明度
+                strokeWeight: 3,      //线宽
+                // strokeStyle: "solid"  //线样式
+            });
+            var passedPolyline = new AMap.Polyline({
+                map: map,
+                // path: lineArr,
+                strokeColor: "#F00",  //线颜色
+                // strokeOpacity: 1,     //线透明度
+                strokeWeight: 3,      //线宽
+                // strokeStyle: "solid"  //线样式
+            });
+            marker.on('moving', function (e) {
+                passedPolyline.setPath(e.passedPath);
+            })
+            map.setFitView();
+            AMap.event.addDomListener(document.getElementById('start'), 'click', function () {
+                marker.moveAlong(lineArr, 500);
+            }, false);
+            AMap.event.addDomListener(document.getElementById('pause'), 'click', function () {
+                marker.pauseMove();
+            }, false);
+            AMap.event.addDomListener(document.getElementById('resume'), 'click', function () {
+                marker.resumeMove();
+            }, false);
+            AMap.event.addDomListener(document.getElementById('stop'), 'click', function () {
+                marker.stopMove();
+            }, false);
+
+        }
+
+        function AlarmFish() {
+            $.ajax({
+                type: "post",
+                url: "MapGuiJi.ashx",
+                data: { funID: "2", PlateNumber: $("#PlateNumber").val(), txb_starttime: $("#txb_starttime").val(), tbx_endtime: $("#tbx_endtime").val() },
+                timeout: 1000,
+                cache: false,
+                async: false,
+                success: function (data) {
+                    if (data.student.length > 0) {
+                        //xdwdata = data.student;
+
+                        var table = document.getElementById("Table1");
+                        for (var i = 0; i < data.student.length; i++) {
+                            var row = table.insertRow(table.rows.length);
+                            var c1 = row.insertCell(0);
+                            c1.innerHTML = data.student[i].DataTime;
+                            var c2 = row.insertCell(1);
+                            c2.innerHTML = data.student[i].OverspeedAlarm;
+                            var c3 = row.insertCell(2);
+                            c3.innerHTML = data.student[i].EmergencyAlarm;
+                            var c4 = row.insertCell(3);
+                            c4.innerHTML = data.student[i].speed;
+                            var c5 = row.insertCell(4);
+                            c5.innerHTML = data.student[i].mileage;
+                        }
+                    }
+                    else {
+                        alert('暂无报警数据！');
+                    }
+                }
+            });
+
+        }
+
+    </script>
+
+</head>
+<body onload="mapInit();">
+    <form id="form1">
+        <asp:Panel ID="Panel2">
+            <div id="top_map">
+                <div id="query">
+                    <div>
+                        <label>车牌号:</label>
+                        <input id="PlateNumber" type="text" value="苏EW2116" />
+                        <label>起始时间：</label>
+                        <input id="txb_starttime" class="Wdate" type="text" value="2020-12-07 06:00:29" onClick="WdatePicker({el:this,dateFmt:'yyyy-MM-dd HH:mm:ss'})">
+                        <label>结束时间：</label>
+                        <input id="tbx_endtime" class="Wdate" type="text" value="2020-12-10 06:50:29" onClick="WdatePicker({el:this,dateFmt:'yyyy-MM-dd HH:mm:ss'})">
+                        <input type="button" value="重置" class="button-rounded" onclick="doclear();" />
+                        <input id='GJHF' type="button" class="button-rounded" onclick="GJHFload()" value="生成轨迹" />
+                    </div>
+                </div>
+            </div>
+        </asp:Panel>
+
+        <div id="dataShow">
+            <div style="text-align: center;margin-top:5px;">
+                <!--车牌号：<input id="Text3" placeholder="请输入车牌号" type="text" style="height: 20px; width: 40px"  />
+                超速报警：<input id="Text1" placeholder="请输入站点名称" type="text" style="height: 20px; width: 40px"  />
+                疲劳驾驶：<input id="Text2" placeholder="请输入站点名称" type="text" style="height: 20px; width: 40px" />-->
+                <input id="AlarmFish11" type="button" onclick="AlarmFish()" value="刷新" />
+                <h2>历史报警信息</h2>
+            </div>
+
+            <div class="table-head">
+                <table id="Table1">
+                    <tr>
+                        <th>时间</th>
+                        <th>电池故障码</th>
+                        <th>电池系统故障</th>
+                        <th>硬件故障</th>
+                        <th>其他故障</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div id="container" tabindex="0"></div>
+
+        <div class="bottom_map">
+            <div style="text-align: center;margin-top:5px;">
+                <input type="button" class="button" value="开始回放" id="start" />
+                <input type="button" class="button" value="暂停回放" id="pause" />
+                <input type="button" class="button" value="继续回放" id="resume" />
+                <input type="button" class="button" value="停止回放" id="stop" />
+            </div>
+        </div>
+
+        <!--<script type="text/javascript">
+            Calendar.setup(
+            {
+                inputField: "txb_starttime",     //input域的ID
+                ifFormat: "%Y-%m-%d  %H:%M:%S",  //输出的格式
+                button: "trigger",        //选择图片的ID
+                showsTime: true             //是否在控件中显示时间
+            }
+          );
+            Calendar.setup({ inputField: "tbx_endtime", ifFormat: "%Y-%m-%d %H:%M:%S", button: "trigger1", showsTime: true });
+        </script>-->
+    </form>
+</body>
+</html>
